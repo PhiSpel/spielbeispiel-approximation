@@ -344,10 +344,10 @@ if __name__ == '__main__':
     approx = update_data(xs,data,datatype,approxtype)
     
     if show_solution:
-        solution_description = r'''f(x)\approx '''
+        solution_description = r'''my best guess: $f(x)\approx '''
         factors=np.round(approx,2)
-        deg = len(factors)
-        for i in range(0,deg):
+        deg = len(factors)-1
+        for i in range(0,deg+1):
             if (factors[i] > 0) & (i > 0):
                 solution_description+='+'
             if deg-i > 1:
@@ -356,6 +356,7 @@ if __name__ == '__main__':
                 solution_description+=str(factors[i]) + 'x'
             elif deg-i == 0:
                 solution_description+=str(factors[i])
+        solution_description+='''$'''
         with col2:
             st.markdown(solution_description)
         # with col2:
