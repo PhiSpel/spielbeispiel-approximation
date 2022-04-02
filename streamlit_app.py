@@ -344,7 +344,18 @@ if __name__ == '__main__':
     approx = update_data(xs,data,datatype,approxtype)
     
     if show_solution:
-        solution_description = r'''coming soon...'''
+        solution_description = r'''f(x)\approx '''
+        factors=np.round(approx,2)
+        deg = len(factors)
+        for i in range(0,deg):
+            if (factors[i] > 0) & (i > 0):
+                solution_description+='+'
+            if deg-i > 1:
+                solution_description+=str(factors[i]) + 'x^' + str(deg-i)
+            elif deg-i == 1:
+                solution_description+=str(factors[i]) + 'x'
+            elif deg-i == 0:
+                solution_description+=str(factors[i])
         with col2:
             st.markdown(solution_description)
         # with col2:
