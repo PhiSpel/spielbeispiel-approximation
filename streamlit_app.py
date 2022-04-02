@@ -2,9 +2,9 @@ import streamlit as st
 
 from scipy.interpolate import interp1d, CubicSpline
 
-#from sympy import *
-#from sympy.parsing.sympy_parser import parse_expr
-#from sympy.abc import x
+from sympy import *
+from sympy.parsing.sympy_parser import parse_expr
+from sympy.abc import x
 
 import numpy as np
 import pandas as pd
@@ -14,6 +14,7 @@ import altair as alt
 import matplotlib.pyplot as plt
 import matplotlib.font_manager
 
+import random
 
 # make sure the humor sans font is found. This only needs to be done once
 # on a system, but it is done here at start up for usage on share.streamlit.io.
@@ -24,99 +25,69 @@ matplotlib.font_manager.findfont('Humor Sans', rebuild_if_missing=True)
 # we need helper functions to interactively update horizontal and vertical lines in a plot
 # https://stackoverflow.com/questions/29331401/updating-pyplot-vlines-in-interactive-plot
 
-def update_vlines(*, h, x, ymin=None, ymax=None):
-    """
-    If h is a handle to a vline object in a matplotlib plot, this function can be used to update x, ymin, ymax
-    """
-    seg_old = h.get_segments()
-    if ymin is None:
-        ymin = seg_old[0][0, 1]
-    if ymax is None:
-        ymax = seg_old[0][1, 1]
+# def update_vlines(*, h, x, ymin=None, ymax=None):
+#     """
+#     If h is a handle to a vline object in a matplotlib plot, this function can be used to update x, ymin, ymax
+#     """
+#     seg_old = h.get_segments()
+#     if ymin is None:
+#         ymin = seg_old[0][0, 1]
+#     if ymax is None:
+#         ymax = seg_old[0][1, 1]
 
-    seg_new = [np.array([[x, ymin],
-                         [x, ymax]]), ]
+#     seg_new = [np.array([[x, ymin],
+#                          [x, ymax]]), ]
 
-    h.set_segments(seg_new)
+#     h.set_segments(seg_new)
 
 
-def update_hlines(*, h, y, xmin=None, xmax=None):
-    """
-    If h is a handle to a hline object in a matplotlib plot, this function can be used to update y, xmin, xmax
-    """
-    seg_old = h.get_segments()
-    if xmin is None:
-        xmin = seg_old[0][0, 0]
-    if xmax is None:
-        xmax = seg_old[0][1, 0]
+# def update_hlines(*, h, y, xmin=None, xmax=None):
+#     """
+#     If h is a handle to a hline object in a matplotlib plot, this function can be used to update y, xmin, xmax
+#     """
+#     seg_old = h.get_segments()
+#     if xmin is None:
+#         xmin = seg_old[0][0, 0]
+#     if xmax is None:
+#         xmax = seg_old[0][1, 0]
 
-    seg_new = [np.array([[xmin, y],
-                         [xmax, y]]), ]
+#     seg_new = [np.array([[xmin, y],
+#                          [xmax, y]]), ]
 
-    h.set_segments(seg_new)
-
+#     h.set_segments(seg_new)
 
 #############################################
 # Define the function that updates the plot #
 #############################################
 
 #@st.cache(suppress_st_warning=True)
-def update_data(interptype,t0,ti_input,yi_input,resolution,degree):
+def update_data(xs,data,datatype,approxtype):
     """
     y_interp,y = update_data(interptype,t,ti,yi)
     """
+
+    if approxtype == 'constant':
+        z=np.polyfit(xs,data,0)
+    elif approxtype == 'linear':
+        z=np.polyfit(xs,data,1)
+    elif approxtype == 'quadratic':
+        z=np.polyfit(xs,data,2)
+    elif approxtype == 'cubic':
+        z=np.polyfit(xs,data,3)
+    approx=np.poly1d(z)
+    #approx = y_interp(xs)
     
-    
-    ti = string_to_list(ti_input)
-    yi = string_to_list(yi_input)
-    
-    tmin = min(ti)
-    tmax = max(ti)
-    length = max(ti)-min(ti)
-    dt = length/resolution
-    
-    t_interp = np.arange(tmin,tmax,dt)
-    if interptype == 'linear':
-        y_interp=interp1d(ti,yi)
-        # reverse-engineering function near t0
-        dtlin = dt/100
-        yright = y_interp(t0+dtlin)
-        yleft = y_interp(t0-dtlin)
-        factor_lin = (yright - yleft)/ (2*dtlin)
-        factor_const = float(y_interp(t0)) - factor_lin*t0
-        factors=[factor_lin,factor_const]
-    elif interptype == 'spline':
-        y_interp=CubicSpline(ti,yi)
-        i = np.searchsorted(ti,t0)-1
-        factors=[y_interp.c[0,i],y_interp.c[1,i],y_interp.c[2,i],y_interp.c[3,i]]
-        # convert factors from fac*(x-x[i])**(3-k) to fac*x**(3-k)
-        # (x-xi)^3 = x^3 - 3xi x^2 + 3xi^2 x - xi^3
-        # (x-xi)^2 =           x^2 - 2xi   x + xi^2
-        # (x-xi)^1 =                       x - xi
-        xi = ti[i]
-        fac3 = factors[0]*1
-        fac2 = factors[0]*-3*xi     + factors[1]*1
-        fac1 = factors[0]*3*(xi**2) + factors[1]*-2*xi   + factors[2]*1
-        fac0 = factors[0]*-(xi**3)+ factors[1]*(xi**2) + factors[2]*-xi + factors[3]*1
-        factors = [fac3,fac2,fac1,fac0]
-    elif interptype == 'polynomial':
-        z=np.polyfit(ti,yi,degree)
-        y_interp=np.poly1d(z)
-        factors = 0
-    ft0 = float(y_interp(t0))
-    y_interp = y_interp(t_interp)
-    
-    return t_interp,y_interp,ft0,ti,yi,factors
+    return approx
 
 
-def string_to_list(stringlist):
-    list_of_str = stringlist.split()
-    list_from_str = [float(x) for x in list_of_str]
-    return list_from_str
+# def string_to_list(stringlist):
+#     list_of_str = stringlist.split()
+#     list_from_str = [float(x) for x in list_of_str]
+#     return list_from_str
 
 # To Do: Why does caching update_plot hang?
 # @st.cache(suppress_st_warning=True)
-def update_plot(ti, yi, t0, ft0, t_interp, y_interp, visible, ti_input, yi_input, ticks_on):
+def update_plot(xs, data, approx, f_input, show_solution, ticks_on):
     
     """
     Creates a Matplotlib plot if the dictionary st.session_state.handles is empty, otherwise
@@ -136,16 +107,24 @@ def update_plot(ti, yi, t0, ft0, t_interp, y_interp, visible, ti_input, yi_input
     :return: none.
     """
     
-    if type(ti) == 'str':
-        ti = string_to_list(ti_input)
-    if type(yi) == 'str':
-        yi = string_to_list(yi_input)
+    tmin = min(xs)
+    tmax = max(xs)
+    length = tmax-tmin
+    dt = round(length/10,1)
     
-    tmin = min(ti)
-    tmax = max(ti)
-    ymin = min(min(yi),min(y_interp))
-    ymax = max(max(yi),max(y_interp))
-
+    ymin = min(data)
+    ymax = max(data)
+    heigth = ymax-ymin
+    dy = round(heigth/10,1)
+    
+    if f_input:
+        f = lambda x: eval(f_input)
+    else:
+        f = lambda x: 0
+    ys= [f(x) for x in xs]
+    
+    approx = approx(xs)
+        
     handles = st.session_state.handles
 
     ax = st.session_state.mpl_fig.axes[0]
@@ -158,25 +137,30 @@ def update_plot(ti, yi, t0, ft0, t_interp, y_interp, visible, ti_input, yi_input
         #######################
 
         # plot the Taylor polynomial
-        handles["datapoints"] = ax.plot(ti, yi,
+        handles["datapoints"] = ax.plot(xs, data,
                                         color='g',
                                         linewidth=0,
                                         marker='o',
-                                        ms=15,
-                                        label='Data points')[0]#.format(degree))[0]
+                                        ms=1,
+                                        label='data points')[0]#.format(degree))[0]
 
         # plot f and append the plot handle
-        handles["interpol"] = ax.plot(t_interp, y_interp,
+        handles["f_input"] = ax.plot(xs, ys,
                                       color='b',
-                                      label="Interpolation of data points")[0]
+                                      label="your best guess")[0]
 
-        handles["interpol"].set_visible(visible)
+        # plot approximation and append the plot handle
+        handles["approx"] = ax.plot(xs, approx,
+                                      color='orange',
+                                      label="my best guess")[0]
+
+        handles["approx"].set_visible(show_solution)
 
         ###############################
         # Beautify the plot some more #
         ###############################
 
-        plt.title('Interpolation of a series of data points')
+        plt.title('Approximation of a series of data points')
         plt.xlabel('t', horizontalalignment='right', x=1)
         plt.ylabel('y', horizontalalignment='right', x=0, y=1)
 
@@ -190,8 +174,8 @@ def update_plot(ti, yi, t0, ft0, t_interp, y_interp, visible, ti_input, yi_input
         ax.spines['right'].set_color('none')
 
         # draw lines for (t0, f(t0))
-        handles["vline"] = plt.vlines(x=t0, ymin=float(min(0, ft0)), ymax=float(max(0, ft0)), colors='black', ls=':', lw=2)
-        handles["hline"] = plt.hlines(y=float(ft0), xmin=tmin, xmax=t0, colors='black', ls=':', lw=2)
+        #handles["vline"] = plt.vlines(x=t0, ymin=float(min(0, ft0)), ymax=float(max(0, ft0)), colors='black', ls=':', lw=2)
+        #handles["hline"] = plt.hlines(y=float(ft0), xmin=tmin, xmax=t0, colors='black', ls=':', lw=2)
 
     else:
         ###################
@@ -199,22 +183,26 @@ def update_plot(ti, yi, t0, ft0, t_interp, y_interp, visible, ti_input, yi_input
         ###################
 
         # Update the data points plot
-        handles["datapoints"].set_xdata(ti)
-        handles["datapoints"].set_ydata(yi)
+        handles["datapoints"].set_xdata(xs)
+        handles["datapoints"].set_ydata(data)
 
-        # update the interpolation plot
-        handles["interpol"].set_xdata(t_interp)
-        handles["interpol"].set_ydata(y_interp)
+        # update the input plot
+        handles["f_input"].set_xdata(xs)
+        handles["f_input"].set_ydata(ys)
+
+        # update the input plot
+        handles["approx"].set_xdata(xs)
+        handles["approx"].set_ydata(approx)
 
         # update the visibility of the Taylor expansion
-        handles["interpol"].set_visible(visible)
+        handles["approx"].set_visible(show_solution)
 
-        update_vlines(h=handles["vline"], x=t0, ymin=float(min(0, ft0)), ymax=float(max(0, ft0)))
-        update_hlines(h=handles["hline"], y=float(ft0), xmin=tmin, xmax=t0)
+        #update_vlines(h=handles["vline"], x=t0, ymin=float(min(0, ft0)), ymax=float(max(0, ft0)))
+        #update_hlines(h=handles["hline"], y=float(ft0), xmin=tmin, xmax=t0)
 
     # set x and y ticks, labels and limits respectively
     if ticks_on:
-        xticks = [x for x in range(round(tmin),round(tmax),1)]
+        xticks = [x for x in np.arange(tmin,tmax,dt).round(1)]
     else:
         xticks=[]
     xticklabels = [str(x) for x in xticks]
@@ -222,25 +210,25 @@ def update_plot(ti, yi, t0, ft0, t_interp, y_interp, visible, ti_input, yi_input
     if tmin <= 0 <= tmax:
         xticks.append(0)
         xticklabels.append("0")
-    if tmin <= t0 <= tmax:
-        xticks.append(t0)
-        xlabel_string = "t0=" + str(round(t0,1))
-        xticklabels.append(xlabel_string)
+    # if tmin <= t0 <= tmax:
+    #     xticks.append(t0)
+    #     xlabel_string = "t0=" + str(round(t0,1))
+    #     xticklabels.append(xlabel_string)
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticklabels)
 
     if ticks_on:
-        yticks = [x for x in range(round(ymin),round(ymax),1)]
+        yticks = [x for x in np.arange(round(ymin),round(ymax),dy).round(1)]
     else:
         yticks=[]
     yticklabels = [str(x) for x in yticks]
     if ymin <= 0 <= ymax:
         yticks.append(0)
         yticklabels.append("0")
-    if ymin <= ft0 <= ymax:
-        yticks.append(ft0)
-        ylabel_string = "f(t0)=" + str(round(ft0,1))
-        yticklabels.append(ylabel_string)
+    # if ymin <= ft0 <= ymax:
+    #     yticks.append(ft0)
+    #     ylabel_string = "f(t0)=" + str(round(ft0,1))
+    #     yticklabels.append(ylabel_string)
     ax.set_yticks(yticks)
     ax.set_yticklabels(yticklabels)
 
@@ -251,8 +239,9 @@ def update_plot(ti, yi, t0, ft0, t_interp, y_interp, visible, ti_input, yi_input
 
     # show legend
     legend_handles = [handles["datapoints"], ]
-    if visible:
-        legend_handles.append(handles["interpol"])
+    legend_handles.append(handles['f_input'])
+    if show_solution:
+        legend_handles.append(handles["approx"])
     ax.legend(handles=legend_handles,
               loc='upper center',
               bbox_to_anchor=(0.5, -0.15),
@@ -260,6 +249,31 @@ def update_plot(ti, yi, t0, ft0, t_interp, y_interp, visible, ti_input, yi_input
 
     # make all changes visible
     st.session_state.mpl_fig.canvas.draw()
+    
+def create_rnd_data(datatype,n):
+    xs = np.random.rand(n)
+    xs.sort()
+    if datatype == 'constant':
+        data = np.random.rand(n)
+    elif datatype == 'linear':
+        #data = ax + b
+        a = random.random()
+        b = random.random()
+        data = a*xs + b + (np.random.rand(n)-0.5)
+    elif datatype == 'quadratic':
+        #data = ax^2+bx+c
+        a = random.random()
+        b = random.random()
+        c = random.random()
+        data = a*np.square(xs) + b*xs + c + (np.random.rand(n)-0.5)
+    elif datatype == 'cubic':
+        #data = ax^3+bx^2+cx+d
+        a = random.random()
+        b = random.random()
+        c = random.random()
+        d = random.random()
+        data = a*np.power(xs,3) + b*np.square(xs) + c*xs + d + (np.random.rand(n)-0.5)
+    return xs, data
 
 if __name__ == '__main__':
 
@@ -277,10 +291,6 @@ if __name__ == '__main__':
     # Good for in-classroom use
     qr = st.sidebar.checkbox(label="Display QR Code", value=False)
 
-    toggle_interp = st.sidebar.checkbox(label='Display Interpolation', value=True)
-
-    res = st.sidebar.number_input(label='resolution', value=100, step=10)
-
     backend = 'Matplotlib' #st.sidebar.selectbox(label="Backend", options=('Matplotlib', 'Altair'), index=0)
 
     # Create main page widgets
@@ -288,7 +298,7 @@ if __name__ == '__main__':
     tcol1, tcol2 = st.columns(2)
 
     with tcol1:
-        st.title('Interpolated Data Points')
+        st.title('Approximated Data Points')
     with tcol2:
         if qr:
             st.markdown('## <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data='
@@ -305,97 +315,88 @@ if __name__ == '__main__':
 
     ticks_on = st.sidebar.checkbox("show xticks and yticks", value=True, on_change=clear_figure)
     
-    # prepare standard values input
-    yi_std_str = "0 1 4 10 -3 3"
-    ti_std_str = "0 1 2 3 4 5"
-    ti_std = string_to_list(ti_std_str)
-    
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        interptype = st.selectbox(label="interpolation type", options=('linear', 'spline', 'polynomial'), index=0)
+        datatype = st.selectbox(label="data type", options=('constant','linear','quadratic','cubic'), index=0)
         
     with col2:
-        ti_input = st.text_input(label='time values, space-separated, same amount as sensor values!',
-                                 value=ti_std_str,
-                                 placeholder="please input time values")
+        f_input = st.text_input(label='input your guessed function',
+                                 value='')
+    
     with col3:
-        yi_input = st.text_input(label='sensor values, space-separated, same amount as time values!',
-                                 value=yi_std_str,
-                                 placeholder="please input sensor values")
+        show_solution = st.checkbox("show ideal result",value=False,on_change=clear_figure)
     
     with col4:
-        t0 = st.slider(
-                't0',
-                min_value=float(0),
-                max_value=float(10),
-                value=float(1.5)
+        n = st.slider(
+                'number of data points',
+                min_value=0,
+                max_value=1000,
+                value=100
             )
     
     col1,col2 = st.columns([1,3])
-    if interptype == 'polynomial':
-        with col1:
-            deg = st.number_input(
-                    'degree',
-                    min_value=0,
-                    max_value=30,
-                    value=len(ti_std)
-        
-                    )
-    else:
-        deg=0
-    # update the data
-    t_interp,y_interp,ft0,ti,yi,factors = update_data(interptype,t0,ti_input,yi_input,res,deg)
+    with col1:
+        approxtype = st.selectbox(label='approximation type', options=('constant','linear','quadratic','cubic'), index=0)
     
-    with col2:
-        if interptype == 'linear':
-            factor_lin_round = round(factors[0],3)
-            factor_const_round = round(factors[1],3)
-            linear_description = r'''
-            $f$ with linear approximation around $t_0$ is $\approx'''
-            if not factor_lin_round == 0:
-                linear_description+= str(factor_lin_round) + '''x'''
-            if factor_const_round > 0:
-                linear_description+='''+''' + str(factor_const_round) + '''$'''
-            elif factor_const_round==0:
-                linear_description+='''$'''
-            else:
-                linear_description+=str(factor_const_round) + '''$'''
-            st.markdown(linear_description)
-        if interptype == 'spline':
-            factors = [round(elem,3) for elem in factors]
-            spline_description = r'''
-            $f$ with spline approximation around $t_0$ is $\approx'''
-            for i in range(0,4,1):
-                if (factors[i] > 0) & (i>0):
-                    spline_description += '+'
-                if not factors[i] == 0:
-                    if (3-i) > 1:
-                        spline_description += str(factors[i]) + 'x^' + str(3-i)
-                    elif (3-i) == 1:
-                        spline_description += str(factors[i]) + 'x'
-                    else:
-                        spline_description += str(factors[i])
-            spline_description+= '''$'''
-            st.markdown(spline_description)
-        if interptype == 'polynomial':
-            polynomial_description = r'''
-            $$f(x)\approx'''
-            for degree in range(deg,-1,-1):
-                factor = round(y_interp[deg-degree],3)
-                if not factor == 0:
-                    if (not degree == deg) & (factor > 0):
-                        polynomial_description+= '''+'''
-                    if degree == 1:
-                        polynomial_description+= str(factor) + '''x'''
-                    elif degree == 0:
-                        polynomial_description+= str(factor) + '''$$'''
-                    else:
-                        polynomial_description+= str(factor) + '''x^{''' + str(degree) + '''}'''
-            # factor0 = round(y_interp[deg],3)
-            # if factor0 > 0:
-            #     polynomial_description+= '''+'''
-            
-            st.markdown(polynomial_description)
+    xs,data = create_rnd_data(datatype,n)
+    
+    # update the data
+    approx = update_data(xs,data,datatype,approxtype)
+    
+    if show_solution:
+        solution_description = r'''coming soon...'''
+        with col2:
+            st.markdown(solution_description)
+        # with col2:
+        #     if approxtype == 'linear':
+        #         factor_lin_round = round(factors[0],3)
+        #         factor_const_round = round(factors[1],3)
+        #         linear_description = r'''
+        #         $f$ with linear approximation around $t_0$ is $\approx'''
+        #         if not factor_lin_round == 0:
+        #             linear_description+= str(factor_lin_round) + '''x'''
+        #         if factor_const_round > 0:
+        #             linear_description+='''+''' + str(factor_const_round) + '''$'''
+        #         elif factor_const_round==0:
+        #             linear_description+='''$'''
+        #         else:
+        #             linear_description+=str(factor_const_round) + '''$'''
+        #         st.markdown(linear_description)
+        #     if approxtype == 'constant':
+        #         factors = [round(elem,3) for elem in factors]
+        #         spline_description = r'''
+        #         $f$ with spline approximation around $t_0$ is $\approx'''
+        #         for i in range(0,4,1):
+        #             if (factors[i] > 0) & (i>0):
+        #                 spline_description += '+'
+        #             if not factors[i] == 0:
+        #                 if (3-i) > 1:
+        #                     spline_description += str(factors[i]) + 'x^' + str(3-i)
+        #                 elif (3-i) == 1:
+        #                     spline_description += str(factors[i]) + 'x'
+        #                 else:
+        #                     spline_description += str(factors[i])
+        #         spline_description+= '''$'''
+        #         st.markdown(spline_description)
+        #     if approxtype == 'exponential':
+        #         polynomial_description = r'''
+        #         $$f(x)\approx'''
+        #         for degree in range(deg,-1,-1):
+        #             factor = round(y_interp[deg-degree],3)
+        #             if not factor == 0:
+        #                 if (not degree == deg) & (factor > 0):
+        #                     polynomial_description+= '''+'''
+        #                 if degree == 1:
+        #                     polynomial_description+= str(factor) + '''x'''
+        #                 elif degree == 0:
+        #                     polynomial_description+= str(factor) + '''$$'''
+        #                 else:
+        #                     polynomial_description+= str(factor) + '''x^{''' + str(degree) + '''}'''
+        #         # factor0 = round(y_interp[deg],3)
+        #         # if factor0 > 0:
+        #         #     polynomial_description+= '''+'''
+                
+        #         st.markdown(polynomial_description)
     
     if 'Matplotlib' in backend:
 
@@ -420,7 +421,7 @@ if __name__ == '__main__':
 
     # update plot
     if 'Matplotlib' in backend:
-        update_plot(ti, yi, t0, ft0, t_interp, y_interp, toggle_interp,ti_input,yi_input,ticks_on)
+        update_plot(xs, data, approx, f_input, show_solution, ticks_on)
         st.pyplot(st.session_state.mpl_fig)
     else:
         df = pd.DataFrame(data=np.array([ti, yi, t_interp, y_interp], dtype=np.float64).transpose(),
