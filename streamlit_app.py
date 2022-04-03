@@ -278,13 +278,15 @@ if __name__ == '__main__':
                 'number of data points',
                 min_value=0,
                 max_value=1000,
-                value=100)
+                value=100,
+                on_change=create_new_data())
         
     
     length = st.sidebar.slider('length of interval',
                            min_value = float(1),
                            max_value = float(50),
-                           value = float(10))
+                           value = float(10),
+                           on_change=create_new_data())
     
     col1, col2, col3, col4 = st.columns(4)
     with col1:
