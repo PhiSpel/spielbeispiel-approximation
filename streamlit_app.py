@@ -1,15 +1,15 @@
 import streamlit as st
 
-from scipy.interpolate import interp1d, CubicSpline
+#from scipy.interpolate import interp1d, CubicSpline
 
-from sympy import *
-from sympy.parsing.sympy_parser import parse_expr
+#from sympy import *
+#from sympy.parsing.sympy_parser import parse_expr
 #from sympy.abc import x
 
 import numpy as np
-import pandas as pd
+#import pandas as pd
 
-import altair as alt
+#import altair as alt
 
 import matplotlib.pyplot as plt
 import matplotlib.font_manager
@@ -25,7 +25,7 @@ matplotlib.font_manager.findfont('Humor Sans', rebuild_if_missing=True)
 #############################################
 
 @st.cache(suppress_st_warning=True)
-def update_data(xs,data,datatype,approxtype):
+def update_approx(xs,data,datatype,approxtype):
     if approxtype == 'constant':
         z=np.polyfit(xs,data,0)
     elif approxtype == 'linear':
@@ -188,6 +188,7 @@ def update_plot(xs, data, approx, f_input, show_solution, ticks_on):
     # make all changes visible
     st.session_state.mpl_fig.canvas.draw()
     
+@st.cache(suppress_st_warning=True)
 def create_rnd_data(datatype,n,distribution,length):
     xs = np.random.rand(n)*length
     xs.sort()
@@ -205,10 +206,10 @@ def create_rnd_data(datatype,n,distribution,length):
             data = a*xs + b + dev
         elif datatype == 'quadratic':
             #data = ax^2+bx+c
-            data = a*np.square(xs) + b*xs + c + dev
+            data = a*np.power(xs,2) + b*xs + c + dev
         elif datatype == 'cubic':
             #data = ax^3+bx^2+cx+d
-            data = a*np.power(xs,3) + b*np.square(xs) + c*xs + d + dev
+            data = a*np.power(xs,3) + b*np.power(xs,2) + c*xs + d + dev
     elif distribution[0] == 'equal':
         a = random.random()
         b = random.random()
@@ -222,11 +223,15 @@ def create_rnd_data(datatype,n,distribution,length):
             data = a*xs + b + dev
         elif datatype == 'quadratic':
             #data = ax^2+bx+c
-            data = a*np.square(xs) + b*xs + c + dev
+            data = a*np.power(xs,2) + b*xs + c + dev
         elif datatype == 'cubic':
             #data = ax^3+bx^2+cx+d
-            data = a*np.power(xs,3) + b*np.square(xs) + c*xs + d + dev
+            data = a*np.power(xs,3) + b*np.power(xs,2) + c*xs + d + dev
     return xs, data
+
+def create_new_data():
+    st.session_state.create_new_data = 1
+    return
 
 if __name__ == '__main__':
 
@@ -285,11 +290,11 @@ if __name__ == '__main__':
     with col1:
         datatype = st.selectbox(label="data type",
                                 options=('constant','linear','quadratic','cubic'),
-                                index=3)
+                                index=3,
+                                on_change=create_new_data())
     with col2:
         show_solution = st.checkbox("show 'my' result",
-                                    value=False,
-                                    on_change=clear_figure)
+                                    value=False)
         if show_solution:
             approxtype = st.selectbox(label='approximation type',
                                           options=('constant','linear','quadratic','cubic'),
@@ -298,23 +303,35 @@ if __name__ == '__main__':
         
     with col3:
         distribution_type = st.select_slider('select distribution type',
-                                             ['normal','equal'])
+                                             ['normal','equal'],
+                                             on_change=create_new_data())
     height = 100
     with col4:
         sigma = st.number_input('deviation (standard deviation sigma for normal distribution, range for equal distribution)',
                                 min_value=float(0),
                                 max_value=float(100),
                                 value=0.1*height,
-                                step=0.01)
-    
-    distribution = [distribution_type,sigma]
-    xs,data = create_rnd_data(datatype,n,distribution,length)
-    height = max(data)
-    # update the data
-    approx = update_data(xs,data,datatype,approxtype)
+                                step=0.01,
+                                on_change=create_new_data())
     
     f_input = st.text_input(label='input your guessed function',
                                  value='')
+    
+    distribution = [distribution_type,sigma]
+    if 'create_new_data' not in st.session_state:
+        st.session_state.create_new_data = 1
+    if 'xs' not in st.session_state:
+        st.session_state.xs = []
+    if 'data' not in st.session_state:
+        st.session_state.data = []
+        
+    if st.session_state.create_new_data:
+        st.session_state.xs,st.session_state.data = create_rnd_data(datatype,n,distribution,length)
+        st.session_state.create_new_data = 0
+    #xs,data = st.session_state.xs,st.session_state.data
+    height = max(st.session_state.data)
+    # update the data
+    approx = update_approx(st.session_state.xs,st.session_state.data,datatype,approxtype)
     
     if show_solution:
         solution_description = r'''my best guess: $f(x)\approx '''
@@ -350,35 +367,35 @@ if __name__ == '__main__':
         if 'handles' not in st.session_state:
             st.session_state.handles = {}
 
-    if 'Altair' in backend and 'chart' not in st.session_state:
-        # initialize empty chart
-        st.session_state.chart = st.empty()
+    # if 'Altair' in backend and 'chart' not in st.session_state:
+    #     # initialize empty chart
+    #     st.session_state.chart = st.empty()
 
     # update plot
     if 'Matplotlib' in backend:
-        update_plot(xs, data, approx, f_input, show_solution, ticks_on)
+        update_plot(st.session_state.xs, st.session_state.data, approx, f_input, show_solution, ticks_on)
         st.pyplot(st.session_state.mpl_fig)
-    else:
-        df = pd.DataFrame(data=np.array([ti, yi, t_interp, y_interp], dtype=np.float64).transpose(),
-                          columns=["ti", "yi", "t_range", "interpolation"])
-        chart = alt.Chart(df) \
-            .transform_fold(["yi", "interpolation"], as_=["legend", "y"]) \
-            .mark_line(clip=True) \
-            .encode(
-                x=alt.X('x:Q', scale=alt.Scale(domain=(min(ti), max(ti)))),
-                y=alt.Y('y:Q', scale=alt.Scale(domain=(min(yi), max(yi)))),
-                color=alt.Color('legend:N',
-                                scale=alt.Scale(range=["green", "blue"]),
-                                legend=alt.Legend(orient='bottom'))
-            )\
-            .interactive()
-        pnt_data = pd.DataFrame({'x': [float(t0),], 'y': [float(ft0),]})
-        pnt = alt.Chart(pnt_data)\
-            .mark_point(clip=True, color='white')\
-            .encode(
-                x='x:Q',
-                y='y:Q',
-            )\
-            .interactive()
-        altair_chart = (chart + pnt).properties(width=800, height=400)
-        st.session_state.chart.altair_chart(altair_chart, use_container_width=True)
+    # else:
+    #     df = pd.DataFrame(data=np.array([ti, yi, t_interp, y_interp], dtype=np.float64).transpose(),
+    #                       columns=["ti", "yi", "t_range", "interpolation"])
+    #     chart = alt.Chart(df) \
+    #         .transform_fold(["yi", "interpolation"], as_=["legend", "y"]) \
+    #         .mark_line(clip=True) \
+    #         .encode(
+    #             x=alt.X('x:Q', scale=alt.Scale(domain=(min(ti), max(ti)))),
+    #             y=alt.Y('y:Q', scale=alt.Scale(domain=(min(yi), max(yi)))),
+    #             color=alt.Color('legend:N',
+    #                             scale=alt.Scale(range=["green", "blue"]),
+    #                             legend=alt.Legend(orient='bottom'))
+    #         )\
+    #         .interactive()
+    #     pnt_data = pd.DataFrame({'x': [float(t0),], 'y': [float(ft0),]})
+    #     pnt = alt.Chart(pnt_data)\
+    #         .mark_point(clip=True, color='white')\
+    #         .encode(
+    #             x='x:Q',
+    #             y='y:Q',
+    #         )\
+    #         .interactive()
+    #     altair_chart = (chart + pnt).properties(width=800, height=400)
+    #     st.session_state.chart.altair_chart(altair_chart, use_container_width=True)
