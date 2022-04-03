@@ -4,7 +4,7 @@ from scipy.interpolate import interp1d, CubicSpline
 
 from sympy import *
 from sympy.parsing.sympy_parser import parse_expr
-from sympy.abc import x
+#from sympy.abc import x
 
 import numpy as np
 import pandas as pd
@@ -20,52 +20,12 @@ import random
 # on a system, but it is done here at start up for usage on share.streamlit.io.
 matplotlib.font_manager.findfont('Humor Sans', rebuild_if_missing=True)
 
-# Define some helpful functions
-
-# we need helper functions to interactively update horizontal and vertical lines in a plot
-# https://stackoverflow.com/questions/29331401/updating-pyplot-vlines-in-interactive-plot
-
-# def update_vlines(*, h, x, ymin=None, ymax=None):
-#     """
-#     If h is a handle to a vline object in a matplotlib plot, this function can be used to update x, ymin, ymax
-#     """
-#     seg_old = h.get_segments()
-#     if ymin is None:
-#         ymin = seg_old[0][0, 1]
-#     if ymax is None:
-#         ymax = seg_old[0][1, 1]
-
-#     seg_new = [np.array([[x, ymin],
-#                          [x, ymax]]), ]
-
-#     h.set_segments(seg_new)
-
-
-# def update_hlines(*, h, y, xmin=None, xmax=None):
-#     """
-#     If h is a handle to a hline object in a matplotlib plot, this function can be used to update y, xmin, xmax
-#     """
-#     seg_old = h.get_segments()
-#     if xmin is None:
-#         xmin = seg_old[0][0, 0]
-#     if xmax is None:
-#         xmax = seg_old[0][1, 0]
-
-#     seg_new = [np.array([[xmin, y],
-#                          [xmax, y]]), ]
-
-#     h.set_segments(seg_new)
-
 #############################################
 # Define the function that updates the plot #
 #############################################
 
-#@st.cache(suppress_st_warning=True)
+@st.cache(suppress_st_warning=True)
 def update_data(xs,data,datatype,approxtype):
-    """
-    y_interp,y = update_data(interptype,t,ti,yi)
-    """
-
     if approxtype == 'constant':
         z=np.polyfit(xs,data,0)
     elif approxtype == 'linear':
@@ -75,15 +35,8 @@ def update_data(xs,data,datatype,approxtype):
     elif approxtype == 'cubic':
         z=np.polyfit(xs,data,3)
     approx=np.poly1d(z)
-    #approx = y_interp(xs)
-    
     return approx
 
-
-# def string_to_list(stringlist):
-#     list_of_str = stringlist.split()
-#     list_from_str = [float(x) for x in list_of_str]
-#     return list_from_str
 
 # To Do: Why does caching update_plot hang?
 # @st.cache(suppress_st_warning=True)
@@ -136,7 +89,7 @@ def update_plot(xs, data, approx, f_input, show_solution, ticks_on):
         # Initialize the plot #
         #######################
 
-        # plot the Taylor polynomial
+        # plot the data points
         handles["datapoints"] = ax.plot(xs, data,
                                         color='g',
                                         linewidth=0,
@@ -173,10 +126,6 @@ def update_plot(xs, data, approx, f_input, show_solution, ticks_on):
         ax.spines['bottom'].set_position(('data', 0))
         ax.spines['right'].set_color('none')
 
-        # draw lines for (t0, f(t0))
-        #handles["vline"] = plt.vlines(x=t0, ymin=float(min(0, ft0)), ymax=float(max(0, ft0)), colors='black', ls=':', lw=2)
-        #handles["hline"] = plt.hlines(y=float(ft0), xmin=tmin, xmax=t0, colors='black', ls=':', lw=2)
-
     else:
         ###################
         # Update the plot #
@@ -197,9 +146,6 @@ def update_plot(xs, data, approx, f_input, show_solution, ticks_on):
         # update the visibility of the Taylor expansion
         handles["approx"].set_visible(show_solution)
 
-        #update_vlines(h=handles["vline"], x=t0, ymin=float(min(0, ft0)), ymax=float(max(0, ft0)))
-        #update_hlines(h=handles["hline"], y=float(ft0), xmin=tmin, xmax=t0)
-
     # set x and y ticks, labels and limits respectively
     if ticks_on:
         xticks = [x for x in np.arange(tmin,tmax,dt).round(1)]
@@ -210,10 +156,6 @@ def update_plot(xs, data, approx, f_input, show_solution, ticks_on):
     if tmin <= 0 <= tmax:
         xticks.append(0)
         xticklabels.append("0")
-    # if tmin <= t0 <= tmax:
-    #     xticks.append(t0)
-    #     xlabel_string = "t0=" + str(round(t0,1))
-    #     xticklabels.append(xlabel_string)
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticklabels)
 
@@ -225,10 +167,6 @@ def update_plot(xs, data, approx, f_input, show_solution, ticks_on):
     if ymin <= 0 <= ymax:
         yticks.append(0)
         yticklabels.append("0")
-    # if ymin <= ft0 <= ymax:
-    #     yticks.append(ft0)
-    #     ylabel_string = "f(t0)=" + str(round(ft0,1))
-    #     yticklabels.append(ylabel_string)
     ax.set_yticks(yticks)
     ax.set_yticklabels(yticklabels)
 
@@ -250,29 +188,44 @@ def update_plot(xs, data, approx, f_input, show_solution, ticks_on):
     # make all changes visible
     st.session_state.mpl_fig.canvas.draw()
     
-def create_rnd_data(datatype,n):
-    xs = np.random.rand(n)
+def create_rnd_data(datatype,n,distribution,length):
+    xs = np.random.rand(n)*length
     xs.sort()
-    if datatype == 'constant':
-        data = np.random.rand(n)
-    elif datatype == 'linear':
-        #data = ax + b
-        a = random.random()
-        b = random.random()
-        data = a*xs + b + (np.random.rand(n)-0.5)
-    elif datatype == 'quadratic':
-        #data = ax^2+bx+c
-        a = random.random()
-        b = random.random()
-        c = random.random()
-        data = a*np.square(xs) + b*xs + c + (np.random.rand(n)-0.5)
-    elif datatype == 'cubic':
-        #data = ax^3+bx^2+cx+d
+    if distribution[0] == 'normal':
+        sigma = distribution[1]
         a = random.random()
         b = random.random()
         c = random.random()
         d = random.random()
-        data = a*np.power(xs,3) + b*np.square(xs) + c*xs + d + (np.random.rand(n)-0.5)
+        dev = np.random.normal(0,sigma,len(xs))
+        if datatype == 'constant':
+            data = a + dev
+        elif datatype == 'linear':
+            #data = ax + b
+            data = a*xs + b + dev
+        elif datatype == 'quadratic':
+            #data = ax^2+bx+c
+            data = a*np.square(xs) + b*xs + c + dev
+        elif datatype == 'cubic':
+            #data = ax^3+bx^2+cx+d
+            data = a*np.power(xs,3) + b*np.square(xs) + c*xs + d + dev
+    elif distribution[0] == 'equal':
+        a = random.random()
+        b = random.random()
+        c = random.random()
+        d = random.random()
+        dev = np.random.rand(n)*length
+        if datatype == 'constant':
+            data = a + dev
+        elif datatype == 'linear':
+            #data = ax + b
+            data = a*xs + b + dev
+        elif datatype == 'quadratic':
+            #data = ax^2+bx+c
+            data = a*np.square(xs) + b*xs + c + dev
+        elif datatype == 'cubic':
+            #data = ax^3+bx^2+cx+d
+            data = a*np.power(xs,3) + b*np.square(xs) + c*xs + d + dev
     return xs, data
 
 if __name__ == '__main__':
@@ -282,9 +235,6 @@ if __name__ == '__main__':
     # create sidebar widgets
 
     st.sidebar.title("Advanced settings")
-
-    #func_str = st.sidebar.text_input(label="function",
-    #                                 value='25 + exp(x)*sin(x**2) - 10*x')
 
     st.sidebar.markdown("Visualization Options")
 
@@ -311,37 +261,60 @@ if __name__ == '__main__':
         def clear_figure():
             del st.session_state['mpl_fig']
             del st.session_state['handles']
-        xkcd = st.sidebar.checkbox("use xkcd-style", value=True, on_change=clear_figure)
+        xkcd = st.sidebar.checkbox("use xkcd-style",
+                                   value=True,
+                                   on_change=clear_figure)
 
-    ticks_on = st.sidebar.checkbox("show xticks and yticks", value=True, on_change=clear_figure)
+    ticks_on = st.sidebar.checkbox("show xticks and yticks",
+                                   value=True,
+                                   on_change=clear_figure)
     
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        datatype = st.selectbox(label="data type", options=('constant','linear','quadratic','cubic'), index=0)
-        
-    with col2:
-        f_input = st.text_input(label='input your guessed function',
-                                 value='')
-    
-    with col3:
-        show_solution = st.checkbox("show ideal result",value=False,on_change=clear_figure)
-    
-    with col4:
-        n = st.slider(
+    n = st.sidebar.slider(
                 'number of data points',
                 min_value=0,
                 max_value=1000,
-                value=100
-            )
+                value=100)
+        
     
-    col1,col2 = st.columns([1,3])
+    length = st.sidebar.slider('length of interval',
+                           min_value = float(1),
+                           max_value = float(50),
+                           value = float(10))
+    
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
-        approxtype = st.selectbox(label='approximation type', options=('constant','linear','quadratic','cubic'), index=0)
+        datatype = st.selectbox(label="data type",
+                                options=('constant','linear','quadratic','cubic'),
+                                index=3)
+    with col2:
+        show_solution = st.checkbox("show 'my' result",
+                                    value=False,
+                                    on_change=clear_figure)
+        if show_solution:
+            approxtype = st.selectbox(label='approximation type',
+                                          options=('constant','linear','quadratic','cubic'),
+                                          index=1)
+        else: approxtype = 'constant'
+        
+    with col3:
+        distribution_type = st.select_slider('select distribution type',
+                                             ['normal','equal'])
+    height = 100
+    with col4:
+        sigma = st.number_input('deviation (standard deviation sigma for normal distribution, range for equal distribution)',
+                                min_value=float(0),
+                                max_value=float(100),
+                                value=0.1*height,
+                                step=0.01)
     
-    xs,data = create_rnd_data(datatype,n)
-    
+    distribution = [distribution_type,sigma]
+    xs,data = create_rnd_data(datatype,n,distribution,length)
+    height = max(data)
     # update the data
     approx = update_data(xs,data,datatype,approxtype)
+    
+    f_input = st.text_input(label='input your guessed function',
+                                 value='')
     
     if show_solution:
         solution_description = r'''my best guess: $f(x)\approx '''
@@ -357,58 +330,8 @@ if __name__ == '__main__':
             elif deg-i == 0:
                 solution_description+=str(factors[i])
         solution_description+='''$'''
-        with col2:
-            st.markdown(solution_description)
-        # with col2:
-        #     if approxtype == 'linear':
-        #         factor_lin_round = round(factors[0],3)
-        #         factor_const_round = round(factors[1],3)
-        #         linear_description = r'''
-        #         $f$ with linear approximation around $t_0$ is $\approx'''
-        #         if not factor_lin_round == 0:
-        #             linear_description+= str(factor_lin_round) + '''x'''
-        #         if factor_const_round > 0:
-        #             linear_description+='''+''' + str(factor_const_round) + '''$'''
-        #         elif factor_const_round==0:
-        #             linear_description+='''$'''
-        #         else:
-        #             linear_description+=str(factor_const_round) + '''$'''
-        #         st.markdown(linear_description)
-        #     if approxtype == 'constant':
-        #         factors = [round(elem,3) for elem in factors]
-        #         spline_description = r'''
-        #         $f$ with spline approximation around $t_0$ is $\approx'''
-        #         for i in range(0,4,1):
-        #             if (factors[i] > 0) & (i>0):
-        #                 spline_description += '+'
-        #             if not factors[i] == 0:
-        #                 if (3-i) > 1:
-        #                     spline_description += str(factors[i]) + 'x^' + str(3-i)
-        #                 elif (3-i) == 1:
-        #                     spline_description += str(factors[i]) + 'x'
-        #                 else:
-        #                     spline_description += str(factors[i])
-        #         spline_description+= '''$'''
-        #         st.markdown(spline_description)
-        #     if approxtype == 'exponential':
-        #         polynomial_description = r'''
-        #         $$f(x)\approx'''
-        #         for degree in range(deg,-1,-1):
-        #             factor = round(y_interp[deg-degree],3)
-        #             if not factor == 0:
-        #                 if (not degree == deg) & (factor > 0):
-        #                     polynomial_description+= '''+'''
-        #                 if degree == 1:
-        #                     polynomial_description+= str(factor) + '''x'''
-        #                 elif degree == 0:
-        #                     polynomial_description+= str(factor) + '''$$'''
-        #                 else:
-        #                     polynomial_description+= str(factor) + '''x^{''' + str(degree) + '''}'''
-        #         # factor0 = round(y_interp[deg],3)
-        #         # if factor0 > 0:
-        #         #     polynomial_description+= '''+'''
-                
-        #         st.markdown(polynomial_description)
+        st.markdown(solution_description)
+    
     
     if 'Matplotlib' in backend:
 
