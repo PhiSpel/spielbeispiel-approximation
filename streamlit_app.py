@@ -171,8 +171,8 @@ def update_plot(xs, data, approx, f_input, show_solution, ticks_on):
     ax.set_yticklabels(yticklabels)
 
     # set the x and y limits
-    ax.set_xlim([tmin, tmax])
-    ax.set_ylim([ymin, ymax])
+    ax.set_xlim([tmin-0.5, tmax+0.5])
+    ax.set_ylim([ymin-0.5, ymax+0.5])
     
 
     # show legend
@@ -197,7 +197,6 @@ def create_rnd_data(datatype,n,distribution,length):
         a = random.random()
         b = random.random()
         c = random.random()
-        d = random.random()
         dev = np.random.normal(0,sigma,len(xs))
         if datatype == 'constant':
             data = a + dev
@@ -207,14 +206,18 @@ def create_rnd_data(datatype,n,distribution,length):
         elif datatype == 'quadratic':
             #data = ax^2+bx+c
             data = a*np.power(xs,2) + b*xs + c + dev
-        elif datatype == 'cubic':
+        elif datatype == 'custom':
             #data = ax^3+bx^2+cx+d
-            data = a*np.power(xs,3) + b*np.power(xs,2) + c*xs + d + dev
+            if distribution[2]:
+                f = lambda x: eval(distribution[2])
+            else:
+                f = lambda x: 0
+            ys= [f(x) for x in xs]
+            data = ys + dev
     elif distribution[0] == 'equal':
         a = random.random()
         b = random.random()
         c = random.random()
-        d = random.random()
         dev = np.random.rand(n)*length
         if datatype == 'constant':
             data = a + dev
@@ -224,9 +227,14 @@ def create_rnd_data(datatype,n,distribution,length):
         elif datatype == 'quadratic':
             #data = ax^2+bx+c
             data = a*np.power(xs,2) + b*xs + c + dev
-        elif datatype == 'cubic':
+        elif datatype == 'custom':
             #data = ax^3+bx^2+cx+d
-            data = a*np.power(xs,3) + b*np.power(xs,2) + c*xs + d + dev
+            if distribution[2]:
+                f = lambda x: eval(distribution[2])
+            else:
+                f = lambda x: 0
+            ys= [f(x) for x in xs]
+            data = ys + dev
     return xs, data
 
 def create_new_data():
@@ -240,7 +248,51 @@ if __name__ == '__main__':
     # create sidebar widgets
 
     st.sidebar.title("Advanced settings")
+    
+    # Data options
+    
+    datatype = st.sidebar.selectbox(label="data type",
+                                options=('constant','linear','quadratic','custom'),
+                                index=2,
+                                on_change=create_new_data())
+    
+    if datatype == 'custom':
+        f_data_input = st.sidebar.text_input(label='input the data function',
+                             value='0.5*x**2 + 1*x - 2',
+                             on_change=create_new_data())
+        
+    distribution_type = st.sidebar.select_slider('select distribution type',
+                                             ['normal','equal'],
+                                             on_change=create_new_data())
+    
+    # deviation could be dependent on the total height of the function - but this would need to be re-looped. can't be bothered...
+    # if 'data' in st.session_state:
+    #     height = max(st.session_state.data)
+    # else:
+    #     height = 100
+    sigma = st.sidebar.number_input('deviation (standard deviation sigma for normal distribution, range for equal distribution)',
+                                min_value=float(0),
+                                max_value=float(100),
+                                # value=0.1*height,
+                                value=float(10),
+                                step=0.01,
+                                on_change=create_new_data())
 
+    n = st.sidebar.slider(
+                'number of data points',
+                min_value=0,
+                max_value=1000,
+                value=100,
+                on_change=create_new_data())
+        
+    
+    length = st.sidebar.slider('length of interval',
+                           min_value = float(1),
+                           max_value = float(50),
+                           value = float(10),
+                           on_change=create_new_data())
+    
+    # Visualization Options
     st.sidebar.markdown("Visualization Options")
 
     # Good for in-classroom use
@@ -274,52 +326,29 @@ if __name__ == '__main__':
                                    value=True,
                                    on_change=clear_figure)
     
-    n = st.sidebar.slider(
-                'number of data points',
-                min_value=0,
-                max_value=1000,
-                value=100,
-                on_change=create_new_data())
-        
-    
-    length = st.sidebar.slider('length of interval',
-                           min_value = float(1),
-                           max_value = float(50),
-                           value = float(10),
-                           on_change=create_new_data())
-    
-    col1, col2, col3, col4 = st.columns(4)
+    col1,col2,col3,col4 = st.columns(4)
     with col1:
-        datatype = st.selectbox(label="data type",
-                                options=('constant','linear','quadratic','cubic'),
-                                index=3,
-                                on_change=create_new_data())
-    with col2:
         show_solution = st.checkbox("show 'my' result",
                                     value=False)
-        if show_solution:
+    if show_solution:
+        with col2:
             approxtype = st.selectbox(label='approximation type',
                                           options=('constant','linear','quadratic','cubic'),
                                           index=1)
-        else: approxtype = 'constant'
-        
-    with col3:
-        distribution_type = st.select_slider('select distribution type',
-                                             ['normal','equal'],
-                                             on_change=create_new_data())
-    height = 100
+    else: approxtype = 'constant'
+    
     with col4:
-        sigma = st.number_input('deviation (standard deviation sigma for normal distribution, range for equal distribution)',
-                                min_value=float(0),
-                                max_value=float(100),
-                                value=0.1*height,
-                                step=0.01,
-                                on_change=create_new_data())
+        st.button(label='create new data',on_click=create_new_data())
     
     f_input = st.text_input(label='input your guessed function',
-                                 value='')
+                             value='0.2*x**2 + 1*x - 2')
     
-    distribution = [distribution_type,sigma]
+    if datatype == 'custom':
+        distribution = [distribution_type,sigma,f_data_input]
+    else:
+        
+        distribution = [distribution_type,sigma]
+    
     if 'create_new_data' not in st.session_state:
         st.session_state.create_new_data = 1
     if 'xs' not in st.session_state:
@@ -330,8 +359,8 @@ if __name__ == '__main__':
     if st.session_state.create_new_data:
         st.session_state.xs,st.session_state.data = create_rnd_data(datatype,n,distribution,length)
         st.session_state.create_new_data = 0
-    #xs,data = st.session_state.xs,st.session_state.data
-    height = max(st.session_state.data)
+    
+    
     # update the data
     approx = update_approx(st.session_state.xs,st.session_state.data,datatype,approxtype)
     
@@ -351,53 +380,21 @@ if __name__ == '__main__':
         solution_description+='''$'''
         st.markdown(solution_description)
     
-    
-    if 'Matplotlib' in backend:
+    if xkcd:
+        # set rc parameters to xkcd style
+        plt.xkcd()
+    else:
+        # reset rc parameters to default
+        plt.rcdefaults()
 
-        if xkcd:
-            # set rc parameters to xkcd style
-            plt.xkcd()
-        else:
-            # reset rc parameters to default
-            plt.rcdefaults()
+    # initialize the Matplotlib figure and initialize an empty dict of plot handles
+    if 'mpl_fig' not in st.session_state:
+        st.session_state.mpl_fig = plt.figure(figsize=(8, 3))
+        st.session_state.mpl_fig.add_axes([0., 0., 1., 1.])
 
-        # initialize the Matplotlib figure and initialize an empty dict of plot handles
-        if 'mpl_fig' not in st.session_state:
-            st.session_state.mpl_fig = plt.figure(figsize=(8, 3))
-            st.session_state.mpl_fig.add_axes([0., 0., 1., 1.])
-
-        if 'handles' not in st.session_state:
-            st.session_state.handles = {}
-
-    # if 'Altair' in backend and 'chart' not in st.session_state:
-    #     # initialize empty chart
-    #     st.session_state.chart = st.empty()
+    if 'handles' not in st.session_state:
+        st.session_state.handles = {}
 
     # update plot
-    if 'Matplotlib' in backend:
-        update_plot(st.session_state.xs, st.session_state.data, approx, f_input, show_solution, ticks_on)
-        st.pyplot(st.session_state.mpl_fig)
-    # else:
-    #     df = pd.DataFrame(data=np.array([ti, yi, t_interp, y_interp], dtype=np.float64).transpose(),
-    #                       columns=["ti", "yi", "t_range", "interpolation"])
-    #     chart = alt.Chart(df) \
-    #         .transform_fold(["yi", "interpolation"], as_=["legend", "y"]) \
-    #         .mark_line(clip=True) \
-    #         .encode(
-    #             x=alt.X('x:Q', scale=alt.Scale(domain=(min(ti), max(ti)))),
-    #             y=alt.Y('y:Q', scale=alt.Scale(domain=(min(yi), max(yi)))),
-    #             color=alt.Color('legend:N',
-    #                             scale=alt.Scale(range=["green", "blue"]),
-    #                             legend=alt.Legend(orient='bottom'))
-    #         )\
-    #         .interactive()
-    #     pnt_data = pd.DataFrame({'x': [float(t0),], 'y': [float(ft0),]})
-    #     pnt = alt.Chart(pnt_data)\
-    #         .mark_point(clip=True, color='white')\
-    #         .encode(
-    #             x='x:Q',
-    #             y='y:Q',
-    #         )\
-    #         .interactive()
-    #     altair_chart = (chart + pnt).properties(width=800, height=400)
-    #     st.session_state.chart.altair_chart(altair_chart, use_container_width=True)
+    update_plot(st.session_state.xs, st.session_state.data, approx, f_input, show_solution, ticks_on)
+    st.pyplot(st.session_state.mpl_fig)
