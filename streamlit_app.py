@@ -326,6 +326,9 @@ if __name__ == '__main__':
                                    value=True,
                                    on_change=clear_figure)
     
+    f_input = st.text_input(label='input your guessed function',
+                             value='0.2*x**2 + 1*x - 2')
+    
     col1,col2,col3,col4 = st.columns(4)
     with col1:
         show_solution = st.checkbox("show 'my' result",
@@ -339,9 +342,6 @@ if __name__ == '__main__':
     
     with col4:
         st.button(label='create new data',on_click=create_new_data())
-    
-    f_input = st.text_input(label='input your guessed function',
-                             value='0.2*x**2 + 1*x - 2')
     
     if datatype == 'custom':
         distribution = [distribution_type,sigma,f_data_input]
