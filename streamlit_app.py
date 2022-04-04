@@ -346,6 +346,9 @@ if __name__ == '__main__':
                                           index=1)
     else: approxtype = 'constant'
     
+    with col3:
+        st.markdown('If you want to create new random data, change the advanced settings (top-left)')
+    
     # the button function does not work, has something to do with cashing, I think...
     # with col4:
     #     st.button(label='create new data',on_click=create_new_data())
