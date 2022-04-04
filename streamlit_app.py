@@ -186,7 +186,7 @@ def update_plot(xs, data, approx, f_input, show_solution, ticks_on):
 
     # make all changes visible
     st.session_state.mpl_fig.canvas.draw()
- 
+
 # with caching, the rerun-button may not work
 @st.cache(suppress_st_warning=True)
 def create_rnd_data(datatype,n,distribution,length):
@@ -335,7 +335,7 @@ if __name__ == '__main__':
                              value='0.2*x**2 + 1*x - 2')#,
                              #on_change=dont_create_new_data())
     
-    col1,col2,col3,col4 = st.columns(4)
+    col1,col2,col3 = st.columns([1,1,2])
     with col1:
         show_solution = st.checkbox("show 'my' result",
                                     value=False)
@@ -347,7 +347,7 @@ if __name__ == '__main__':
     else: approxtype = 'constant'
     
     with col3:
-        st.markdown('If you want to create new random data, change the advanced settings (top-left)')
+        st.markdown('''If you want to create new random data, change the advanced settings (top-left), or clear the cache (press 'c')''')
     
     # the button function does not work, has something to do with cashing, I think...
     # with col4:
