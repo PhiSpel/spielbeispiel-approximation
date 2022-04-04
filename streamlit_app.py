@@ -37,7 +37,6 @@ def update_approx(xs,data,datatype,approxtype):
     approx=np.poly1d(z)
     return approx
 
-
 # To Do: Why does caching update_plot hang?
 # @st.cache(suppress_st_warning=True)
 def update_plot(xs, data, approx, f_input, show_solution, ticks_on):
@@ -187,7 +186,8 @@ def update_plot(xs, data, approx, f_input, show_solution, ticks_on):
 
     # make all changes visible
     st.session_state.mpl_fig.canvas.draw()
-    
+ 
+# with caching, the rerun-button may not work
 @st.cache(suppress_st_warning=True)
 def create_rnd_data(datatype,n,distribution,length):
     xs = np.random.rand(n)*length
@@ -240,6 +240,11 @@ def create_rnd_data(datatype,n,distribution,length):
 def create_new_data():
     st.session_state.create_new_data = 1
     return
+
+# function for the button - does not work, for some reason, though
+# def dont_create_new_data():
+#     st.session_state.create_new_data = 0
+#     return
 
 if __name__ == '__main__':
 
@@ -298,6 +303,7 @@ if __name__ == '__main__':
     # Good for in-classroom use
     qr = st.sidebar.checkbox(label="Display QR Code", value=False)
 
+    # for now, I will assume matplotlib always works and we dont need the Altair backend
     backend = 'Matplotlib' #st.sidebar.selectbox(label="Backend", options=('Matplotlib', 'Altair'), index=0)
 
     # Create main page widgets
@@ -313,21 +319,21 @@ if __name__ == '__main__':
                         unsafe_allow_html=True)
 
     # prepare matplotlib plot
-    if 'Matplotlib' in backend:
-
-        def clear_figure():
-            del st.session_state['mpl_fig']
-            del st.session_state['handles']
-        xkcd = st.sidebar.checkbox("use xkcd-style",
-                                   value=True,
-                                   on_change=clear_figure)
+    def clear_figure():
+        del st.session_state['mpl_fig']
+        del st.session_state['handles']
+        
+    xkcd = st.sidebar.checkbox("use xkcd-style",
+                               value=True,
+                               on_change=clear_figure)
 
     ticks_on = st.sidebar.checkbox("show xticks and yticks",
                                    value=True,
                                    on_change=clear_figure)
     
     f_input = st.text_input(label='input your guessed function',
-                             value='0.2*x**2 + 1*x - 2')
+                             value='0.2*x**2 + 1*x - 2')#,
+                             #on_change=dont_create_new_data())
     
     col1,col2,col3,col4 = st.columns(4)
     with col1:
@@ -340,13 +346,13 @@ if __name__ == '__main__':
                                           index=1)
     else: approxtype = 'constant'
     
-    with col4:
-        st.button(label='create new data',on_click=create_new_data())
+    # the button function does not work, has something to do with cashing, I think...
+    # with col4:
+    #     st.button(label='create new data',on_click=create_new_data())
     
     if datatype == 'custom':
         distribution = [distribution_type,sigma,f_data_input]
     else:
-        
         distribution = [distribution_type,sigma]
     
     if 'create_new_data' not in st.session_state:
@@ -359,7 +365,6 @@ if __name__ == '__main__':
     if st.session_state.create_new_data:
         st.session_state.xs,st.session_state.data = create_rnd_data(datatype,n,distribution,length)
         st.session_state.create_new_data = 0
-    
     
     # update the data
     approx = update_approx(st.session_state.xs,st.session_state.data,datatype,approxtype)
