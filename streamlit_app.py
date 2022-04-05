@@ -1,15 +1,7 @@
 import streamlit as st
 
-#from scipy.interpolate import interp1d, CubicSpline
-
-#from sympy import *
-#from sympy.parsing.sympy_parser import parse_expr
-#from sympy.abc import x
-
 import numpy as np
-#import pandas as pd
-
-#import altair as alt
+import math
 
 import matplotlib.pyplot as plt
 import matplotlib.font_manager
@@ -248,7 +240,10 @@ def create_new_data():
 
 if __name__ == '__main__':
 
-    st.set_page_config(layout="wide", initial_sidebar_state="collapsed")
+    if 'create_new_data' not in st.session_state:
+        st.session_state.create_new_data = 1
+    
+    st.set_page_config(layout="wide")#, initial_sidebar_state="collapsed")
 
     # create sidebar widgets
 
@@ -308,15 +303,18 @@ if __name__ == '__main__':
 
     # Create main page widgets
 
-    tcol1, tcol2 = st.columns(2)
-
-    with tcol1:
-        st.title('Approximated Data Points')
-    with tcol2:
-        if qr:
+    if qr:
+        tcol1, tcol2 = st.columns(2)
+        with tcol1:
+            st.title('Approximated Data Points')
+        with tcol2:
             st.markdown('## <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data='
                         'https://share.streamlit.io/PhiSpel/spielbeispiel-interpolation/main" width="200"/>',
                         unsafe_allow_html=True)
+    else:
+        st.title('Approximated Data Points')
+            
+    st.markdown('''If you want to create new random data, change the advanced settings (top-left), or clear the cache (press 'c')''')
 
     # prepare matplotlib plot
     def clear_figure():
@@ -330,9 +328,11 @@ if __name__ == '__main__':
     ticks_on = st.sidebar.checkbox("show xticks and yticks",
                                    value=True,
                                    on_change=clear_figure)
-    
-    f_input = st.text_input(label='input your guessed function',
-                             value='0.2*x**2 + 1*x - 2')#,
+    col1,col2 = st.columns(2)
+    with col1:
+        f_input = st.text_input(label='input your guessed function',
+                             value='0.2*x**2 + 1*x - 2',
+                             help='''type e.g. 'math.sin(x)' to generate a sine function''')#,
                              #on_change=dont_create_new_data())
     
     col1,col2,col3 = st.columns([1,1,2])
@@ -346,9 +346,6 @@ if __name__ == '__main__':
                                           index=1)
     else: approxtype = 'constant'
     
-    with col3:
-        st.markdown('''If you want to create new random data, change the advanced settings (top-left), or clear the cache (press 'c')''')
-    
     # the button function does not work, has something to do with cashing, I think...
     # with col4:
     #     st.button(label='create new data',on_click=create_new_data())
@@ -358,8 +355,6 @@ if __name__ == '__main__':
     else:
         distribution = [distribution_type,sigma]
     
-    if 'create_new_data' not in st.session_state:
-        st.session_state.create_new_data = 1
     if 'xs' not in st.session_state:
         st.session_state.xs = []
     if 'data' not in st.session_state:
