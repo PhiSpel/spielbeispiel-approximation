@@ -1,5 +1,6 @@
 import streamlit as st
-from streamlit import caching
+# caching option only for reset-button
+#from streamlit import caching
 
 import numpy as np
 import math
@@ -23,7 +24,8 @@ st.set_page_config(layout="wide", initial_sidebar_state="collapsed")
 # @st.cache(suppress_st_warning=True)
 def update_plot():
     xs, data, approx, f_input, show_solution, ticks_on = st.session_state.xs, st.session_state.data, st.session_state.approx, st.session_state.f_input, st.session_state.show_solution, st.session_state.ticks_on
-    
+    show_polyfit_solution = st.session_state.show_polyfit_solution
+    function = st.session_state.function
     # Creates a Matplotlib plot if the dictionary st.session_state.handles is empty, otherwise
     # updates a Matplotlib plot by modifying the plot handles stored in st.session_state.handles.
     # The figure is stored in st.session_state.fig.
@@ -82,12 +84,19 @@ def update_plot():
                                       color='b',
                                       label="your best guess")[0]
 
+        # plot actual function and append the plot handle
+        handles["actual"] = ax.plot(xs, function(xs),
+                                      color='g',
+                                      label="actual function")[0]
+
+        handles["actual"].set_visible(show_solution)
+        
         # plot approximation and append the plot handle
         handles["approx"] = ax.plot(xs, approx,
                                       color='orange',
-                                      label="my best guess")[0]
+                                      label="np.polyfit guess")[0]
 
-        handles["approx"].set_visible(show_solution)
+        handles["approx"].set_visible(show_polyfit_solution)
 
         ###############################
         # Beautify the plot some more #
@@ -120,11 +129,18 @@ def update_plot():
         handles["f_input"].set_ydata(ys)
 
         # update the input plot
+        handles["actual"].set_xdata(xs)
+        handles["actual"].set_ydata(function(xs))
+
+        # update the visibility of the Taylor expansion
+        handles["actual"].set_visible(show_solution)
+        
+        # update the input plot
         handles["approx"].set_xdata(xs)
         handles["approx"].set_ydata(approx)
 
         # update the visibility of the Taylor expansion
-        handles["approx"].set_visible(show_solution)
+        handles["approx"].set_visible(show_polyfit_solution)
 
     # set x and y ticks, labels and limits respectively
     if ticks_on:
@@ -159,6 +175,8 @@ def update_plot():
     legend_handles = [handles["datapoints"], ]
     legend_handles.append(handles['f_input'])
     if show_solution:
+        legend_handles.append(handles["actual"])
+    if show_polyfit_solution:
         legend_handles.append(handles["approx"])
     ax.legend(handles=legend_handles,
               loc='upper center',
@@ -192,23 +210,23 @@ def create_new_factors(datatype,f_data_input):
         factors = ''
     return function, factors
 
-@st.experimental_singleton
+# can only cache one function output, otherwise things get stuck
+#@st.experimental_singleton
 def create_randomization(dist_type):
     n = st.session_state.n
     length = st.session_state.length
     xs = np.random.rand(n)*length
     xs.sort()
-    st.session_state.xs = xs
     if dist_type == 'normal':
         dev = np.random.normal(0,st.session_state.sigma,n)
     elif dist_type == 'equal':
         dev = np.random.rand(n)*st.session_state.sigma
-    return dev
+    return dev,xs
     
 def create_new_points():
-    st.session_state.dev = create_randomization(st.session_state.dist_type)
-    xs= st.session_state.xs
-    st.session_state.data = st.session_state.function(xs) + st.session_state.dev
+    dev,xs = create_randomization(st.session_state.dist_type)
+    st.session_state.xs = xs
+    st.session_state.data = st.session_state.function(xs) + dev
     return
 
 def reset_rnd():
@@ -241,7 +259,7 @@ def clear_figure():
     del st.session_state['handles']
 
 def write_solution_description():
-    solution_description = r'''my best guess: $f(x)\approx '''
+    solution_description = r'''np.polyfit guesses: $f(x)\approx '''
     factors=np.round(st.session_state.approx,2)
     deg = len(factors)-1
     for i in range(0,deg+1):
@@ -286,8 +304,6 @@ if 'create_new_points' not in st.session_state:
     st.session_state.create_new_points = 0
 if 'approx' not in st.session_state:
     st.session_state.approx = {}
-if 'xs' not in st.session_state:
-    st.session_state.xs = []
 if 'data' not in st.session_state:
     st.session_state.data = []
 
@@ -309,7 +325,8 @@ if st.session_state.datatype == 'custom':
     f_data_input = st.sidebar.text_input(label='input the data function',
                          value='0.5*x**2 + 1*x - 2',
                          key='f_data_input',
-                         on_change=request_new_data())
+                         on_change=request_new_data(),
+                         help='''type e.g. 'math.sin(x)' to generate a sine function''')
 else:
     st.session_state.f_data_input = ''
     
@@ -376,7 +393,8 @@ if qr:
 else:
     st.title('Approximated Data Points')
         
-st.markdown('''If you want to create new random data, change the advanced settings (top-left), or clear the cache (press 'c')''')
+st.markdown('''If you want to create a new function or input your own function, change the advanced settings (top-left).''')
+st.markdown('''The data points will change at random when you guess a new function, but the function you should guess remains the same!''')
 
 col1,col2 = st.columns(2)
 with col1:
@@ -386,10 +404,13 @@ with col1:
 
 col1,col2,col3,col4 = st.columns(4)
 with col1:
-    st.session_state.show_solution = st.checkbox("show the result of np.polyfit",
+    st.session_state.show_solution = st.checkbox("show the actual function",
                                 value=False,
                                 on_change=clear_figure)
-if st.session_state.show_solution:
+    st.session_state.show_polyfit_solution = st.checkbox("show the np.polyfit solution",
+                                value=False,
+                                on_change=clear_figure)
+if st.session_state.show_polyfit_solution:
     with col2:
         st.session_state.approxtype = st.selectbox(label='approximation type',
                                       options=('constant','linear','quadratic','cubic'),
@@ -413,14 +434,15 @@ elif (st.session_state.create_new_points==1):
     st.session_state.create_new_points = 0
 
 
+col1,col2,col3,col4=st.columns(4)
 if st.session_state.show_solution:
-    write_solution_description()
     write_actual_function()
-    col1,col2,col3,col4=st.columns(4)
     with col1:
-        st.markdown(st.session_state.solution_description + ',')
-    with col2:
         st.markdown(st.session_state.actual_function)
+if st.session_state.show_polyfit_solution:
+    write_solution_description()
+    with col2:
+        st.markdown(st.session_state.solution_description)
 
 if xkcd:
     # set rc parameters to xkcd style
