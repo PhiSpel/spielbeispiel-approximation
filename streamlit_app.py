@@ -47,6 +47,8 @@ def update_plot():
     length = tmax-tmin
     if length >= 10:
         dt = round(length/10)
+    elif length >= 2:
+        dt = 0.5
     else:
         dt = 0.1
     
@@ -55,6 +57,8 @@ def update_plot():
     height = ymax-ymin
     if height >= 10:
         dy = round(height/10)
+    elif height >= 2:
+        dy = 0.5
     else:
         dy = 0.1
     
