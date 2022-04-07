@@ -52,9 +52,9 @@ def update_plot():
     
     ymin = min(data)
     ymax = max(data)
-    heigth = ymax-ymin
-    if heigth >= 10:
-        dy = round(heigth/10)
+    height = ymax-ymin
+    if height >= 10:
+        dy = round(height/10)
     else:
         dy = 0.1
     
