@@ -45,12 +45,18 @@ def update_plot():
     tmin = min(xs)
     tmax = max(xs)
     length = tmax-tmin
-    dt = round(length/10,1)
+    if length >= 10:
+        dt = round(length/10)
+    else:
+        dt = 0.1
     
     ymin = min(data)
     ymax = max(data)
     heigth = ymax-ymin
-    dy = round(heigth/10,1)
+    if heigth >= 10:
+        dy = round(heigth/10)
+    else:
+        dy = 0.1
     
     if f_input:
         f = lambda x: eval(f_input)
@@ -156,7 +162,7 @@ def update_plot():
     ax.set_xticklabels(xticklabels)
 
     if ticks_on:
-        yticks = [x for x in np.arange(round(ymin),round(ymax),dy).round(1)]
+        yticks = [x for x in np.arange(round(ymin-0.5),round(ymax+0.5),dy).round(1)]
     else:
         yticks=[]
     yticklabels = [str(x) for x in yticks]
