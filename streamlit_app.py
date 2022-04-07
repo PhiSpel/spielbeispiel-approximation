@@ -25,7 +25,7 @@ st.set_page_config(layout="wide", initial_sidebar_state="collapsed")
 def update_plot():
     xs, data, approx, f_input, show_solution, ticks_on = st.session_state.xs, st.session_state.data, st.session_state.approx, st.session_state.f_input, st.session_state.show_solution, st.session_state.ticks_on
     show_polyfit_solution = st.session_state.show_polyfit_solution
-    function = st.session_state.function
+    function = st.session_state.function(xs)
     # Creates a Matplotlib plot if the dictionary st.session_state.handles is empty, otherwise
     # updates a Matplotlib plot by modifying the plot handles stored in st.session_state.handles.
     # The figure is stored in st.session_state.fig.
@@ -85,7 +85,7 @@ def update_plot():
                                       label="your best guess")[0]
 
         # plot actual function and append the plot handle
-        handles["actual"] = ax.plot(xs, function(xs),
+        handles["actual"] = ax.plot(xs, function,
                                       color='g',
                                       label="actual function")[0]
 
@@ -130,7 +130,7 @@ def update_plot():
 
         # update the input plot
         handles["actual"].set_xdata(xs)
-        handles["actual"].set_ydata(function(xs))
+        handles["actual"].set_ydata(function)
 
         # update the visibility of the Taylor expansion
         handles["actual"].set_visible(show_solution)
@@ -220,7 +220,7 @@ def create_randomization(dist_type):
     if dist_type == 'normal':
         dev = np.random.normal(0,st.session_state.sigma,n)
     elif dist_type == 'equal':
-        dev = np.random.rand(n)*st.session_state.sigma
+        dev = (np.random.rand(n)-0.5)*st.session_state.sigma
     return dev,xs
     
 def create_new_points():
@@ -368,7 +368,7 @@ st.sidebar.markdown("Visualization Options")
 qr = st.sidebar.checkbox(label="Display QR Code", value=False)
 
 xkcd = st.sidebar.checkbox("use xkcd-style",
-                           value=True,
+                           value=False,
                            on_change=clear_figure)
 
 ticks_on = st.sidebar.checkbox("show xticks and yticks",
