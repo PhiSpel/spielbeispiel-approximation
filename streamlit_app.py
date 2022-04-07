@@ -396,13 +396,11 @@ else:
 st.markdown('''If you want to create a new function or input your own function, change the advanced settings (top-left).''')
 st.markdown('''The data points will change at random when you guess a new function, but the function you should guess remains the same!''')
 
-col1,col2,col3 = st.columns(3)
-with col1:
-    st.session_state.f_input = st.text_input(label='input your guessed function',
+st.session_state.f_input = st.text_input(label='input your guessed function',
                          value='0.2*x**2 + 1*x - 2',
                          help='''type e.g. 'math.sin(x)' to generate a sine function''')
 
-col1,col2,col3 = st.columns(3)
+col1,col2 = st.columns(2)
 with col1:
     st.session_state.show_solution = st.checkbox("show the actual function",
                                 value=False,
@@ -434,7 +432,7 @@ elif (st.session_state.create_new_points==1):
     st.session_state.create_new_points = 0
 
 
-col1,col2,col3=st.columns(3)
+col1,col2=st.columns(2)
 if st.session_state.show_solution:
     write_actual_function()
     with col1:
