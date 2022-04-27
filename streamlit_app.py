@@ -113,7 +113,7 @@ def update_plot():
         ###############################
 
         plt.title('Approximation of a series of data points')
-        plt.xlabel('t', horizontalalignment='right', x=1)
+        plt.xlabel('x', horizontalalignment='right', x=1)
         plt.ylabel('y', horizontalalignment='right', x=0, y=1)
 
         # set the z order of the axes spines
@@ -153,28 +153,15 @@ def update_plot():
         handles["approx"].set_visible(show_polyfit_solution)
 
     # set x and y ticks, labels and limits respectively
-    if ticks_on:
-        xticks = [x for x in np.arange(tmin,tmax,dt).round(1)]
-    else:
+    if not ticks_on:
         xticks=[]
-    xticklabels = [str(x) for x in xticks]
-    
-    if tmin <= 0 <= tmax:
-        xticks.append(0)
-        xticklabels.append("0")
-    ax.set_xticks(xticks)
-    ax.set_xticklabels(xticklabels)
-
-    if ticks_on:
-        yticks = [x for x in np.arange(round(ymin-0.5),round(ymax+0.5),dy).round(1)]
-    else:
+        xticklabels = [str(x) for x in xticks]
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xticklabels)
         yticks=[]
-    yticklabels = [str(x) for x in yticks]
-    if ymin <= 0 <= ymax:
-        yticks.append(0)
-        yticklabels.append("0")
-    ax.set_yticks(yticks)
-    ax.set_yticklabels(yticklabels)
+        yticklabels = [str(x) for x in yticks]
+        ax.set_yticks(yticks)
+        ax.set_yticklabels(yticklabels)
 
     # set the x and y limits
     ax.set_xlim([tmin-0.5, tmax+0.5])
