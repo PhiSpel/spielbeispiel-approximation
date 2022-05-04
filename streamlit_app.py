@@ -25,7 +25,7 @@ st.set_page_config(layout="wide", initial_sidebar_state="collapsed")
 def update_plot():
     xs, data, approx, f_input, show_solution, ticks_on = st.session_state.xs, st.session_state.data, st.session_state.approx, st.session_state.f_input, st.session_state.show_solution, st.session_state.ticks_on
     show_polyfit_solution = st.session_state.show_polyfit_solution
-    function = st.session_state.function(xs)
+    function = np.array([st.session_state.function(x) for x in xs])
     # Creates a Matplotlib plot if the dictionary st.session_state.handles is empty, otherwise
     # updates a Matplotlib plot by modifying the plot handles stored in st.session_state.handles.
     # The figure is stored in st.session_state.fig.
@@ -223,7 +223,7 @@ def create_randomization(dist_type):
 def create_new_points():
     dev,xs = create_randomization(st.session_state.dist_type)
     st.session_state.xs = xs
-    st.session_state.data = st.session_state.function(xs) + dev
+    st.session_state.data = np.array([st.session_state.function(x) for x in xs]) + dev
     return
 
 def reset_rnd():
