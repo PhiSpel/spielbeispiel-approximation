@@ -104,7 +104,7 @@ def update_plot():
         # plot approximation and append the plot handle
         handles["approx"] = ax.plot(xs, approx,
                                       color='orange',
-                                      label="np.polyfit guess")[0]
+                                      label="polyfit guess")[0]
 
         handles["approx"].set_visible(show_polyfit_solution)
 
@@ -234,13 +234,13 @@ def reset_rnd():
 def update_approx():
     xs,data,approxtype = st.session_state.xs,st.session_state.data,st.session_state.approxtype
     if approxtype == 'constant':
-        z=np.polyfit(xs,data,0)
+        z=np.polynomial.polynomial.polyfit(xs,data,0)
     elif approxtype == 'linear':
-        z=np.polyfit(xs,data,1)
+        z=np.polynomial.polynomial.polyfit(xs,data,1)
     elif approxtype == 'quadratic':
-        z=np.polyfit(xs,data,2)
+        z=np.polynomial.polynomial.polyfit(xs,data,2)
     elif approxtype == 'cubic':
-        z=np.polyfit(xs,data,3)
+        z=np.polynomial.polynomial.polyfit(xs,data,3)
     st.session_state.approx=np.poly1d(z)
     return
 
@@ -256,7 +256,7 @@ def clear_figure():
     del st.session_state['handles']
 
 def write_solution_description():
-    solution_description = r'''np.polyfit guesses: $f(x)\approx '''
+    solution_description = r'''polyfit guesses: $f(x)\approx '''
     factors=np.round(st.session_state.approx,2)
     deg = len(factors)-1
     for i in range(0,deg+1):
@@ -402,7 +402,7 @@ with col1:
     st.session_state.show_solution = st.checkbox("show the actual function",
                                 value=False,
                                 on_change=clear_figure)
-    st.session_state.show_polyfit_solution = st.checkbox("show the np.polyfit solution",
+    st.session_state.show_polyfit_solution = st.checkbox("show the polyfit solution",
                                 value=False,
                                 on_change=clear_figure)
 if st.session_state.show_polyfit_solution:
