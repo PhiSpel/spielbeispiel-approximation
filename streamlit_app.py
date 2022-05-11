@@ -234,13 +234,13 @@ def reset_rnd():
 def update_approx():
     xs,data,approxtype = st.session_state.xs,st.session_state.data,st.session_state.approxtype
     if approxtype == 'constant':
-        z=np.polynomial.polynomial.polyfit(xs,data,0)
+        z=np.polyfit(xs,data,0)
     elif approxtype == 'linear':
-        z=np.polynomial.polynomial.polyfit(xs,data,1)
+        z=np.polyfit(xs,data,1)
     elif approxtype == 'quadratic':
-        z=np.polynomial.polynomial.polyfit(xs,data,2)
+        z=np.polyfit(xs,data,2)
     elif approxtype == 'cubic':
-        z=np.polynomial.polynomial.polyfit(xs,data,3)
+        z=np.polyfit(xs,data,3)
     st.session_state.approx=np.poly1d(z)
     return
 
