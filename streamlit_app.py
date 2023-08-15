@@ -1,9 +1,9 @@
 import streamlit as st
 # caching option only for reset-button
-#from streamlit import caching
+# from streamlit import caching
 
 import numpy as np
-import math
+# import math
 
 import matplotlib.pyplot as plt
 import matplotlib.font_manager
@@ -15,6 +15,7 @@ import random
 matplotlib.font_manager.findfont('Humor Sans', rebuild_if_missing=True)
 
 st.set_page_config(layout="wide", initial_sidebar_state="collapsed")
+
 
 #############################################
 # Define the function that updates the plot #
@@ -41,35 +42,35 @@ def update_plot():
     # :param ymin: minimum y-range value
     # :param ymax: maximum y-range value
     # :return: none.
-    
+
     tmin = min(xs)
     tmax = max(xs)
-    length = tmax-tmin
+    length = tmax - tmin
     if length >= 10:
-        dt = round(length/10)
+        dt = round(length / 10)
     elif length >= 2:
         dt = 0.5
     else:
         dt = 0.1
-    
+
     ymin = min(data)
     ymax = max(data)
-    height = ymax-ymin
+    height = ymax - ymin
     if height >= 10:
-        dy = round(height/10)
+        dy = round(height / 10)
     elif height >= 2:
         dy = 0.5
     else:
         dy = 0.1
-    
+
     if f_input:
         f = lambda x: eval(f_input)
     else:
         f = lambda x: 0
-    ys= [f(x) for x in xs]
-    
-    approx = approx(xs)
-        
+    ys = [f(x) for x in xs]
+
+    appr = approx(xs)
+
     handles = st.session_state.handles
 
     ax = st.session_state.mpl_fig.axes[0]
@@ -87,24 +88,24 @@ def update_plot():
                                         linewidth=0,
                                         marker='o',
                                         ms=1,
-                                        label='data points')[0]#.format(degree))[0]
+                                        label='data points')[0]  # .format(degree))[0]
 
         # plot f and append the plot handle
         handles["f_input"] = ax.plot(xs, ys,
-                                      color='b',
-                                      label="your best guess")[0]
+                                     color='b',
+                                     label="your best guess")[0]
 
         # plot actual function and append the plot handle
         handles["actual"] = ax.plot(xs, function,
-                                      color='g',
-                                      label="actual function")[0]
+                                    color='g',
+                                    label="actual function")[0]
 
         handles["actual"].set_visible(show_solution)
-        
+
         # plot approximation and append the plot handle
-        handles["approx"] = ax.plot(xs, approx,
-                                      color='orange',
-                                      label="polyfit guess")[0]
+        handles["approx"] = ax.plot(xs, appr,
+                                    color='orange',
+                                    label="polyfit guess")[0]
 
         handles["approx"].set_visible(show_polyfit_solution)
 
@@ -144,29 +145,28 @@ def update_plot():
 
         # update the visibility of the Taylor expansion
         handles["actual"].set_visible(show_solution)
-        
+
         # update the input plot
         handles["approx"].set_xdata(xs)
-        handles["approx"].set_ydata(approx)
+        handles["approx"].set_ydata(appr)
 
         # update the visibility of the Taylor expansion
         handles["approx"].set_visible(show_polyfit_solution)
 
     # set x and y ticks, labels and limits respectively
     if not ticks_on:
-        xticks=[]
+        xticks = []
         xticklabels = [str(x) for x in xticks]
         ax.set_xticks(xticks)
         ax.set_xticklabels(xticklabels)
-        yticks=[]
+        yticks = []
         yticklabels = [str(x) for x in yticks]
         ax.set_yticks(yticks)
         ax.set_yticklabels(yticklabels)
 
     # set the x and y limits
-    ax.set_xlim([tmin-0.5, tmax+0.5])
-    ax.set_ylim([ymin-0.5, ymax+0.5])
-    
+    ax.set_xlim([tmin - 0.5, tmax + 0.5])
+    ax.set_ylim([ymin - 0.5, ymax + 0.5])
 
     # show legend
     legend_handles = [handles["datapoints"], ]
@@ -183,22 +183,23 @@ def update_plot():
     # make all changes visible
     st.session_state.mpl_fig.canvas.draw()
 
-@st.experimental_singleton
-def create_new_factors(datatype,f_data_input):
-    a = round(random.random(),3)
-    b = round(random.random(),3)
-    c = round(random.random(),3)
+
+@st.cache_resource
+def create_new_factors(datatype, f_data_input):
+    a = round(random.random(), 3)
+    b = round(random.random(), 3)
+    c = round(random.random(), 3)
     if datatype == 'constant':
         function = lambda x: a
-        factors=[a]
+        factors = [a]
     elif datatype == 'linear':
-        #data = ax + b
-        function = lambda x: a*x + b
-        factors=[a,b]
+        # data = ax + b
+        function = lambda x: a * x + b
+        factors = [a, b]
     elif datatype == 'quadratic':
-        #data = ax^2+bx+c
-        function = lambda x: a*x**2 + b*x + c
-        factors=[a,b,c]
+        # data = ax^2+bx+c
+        function = lambda x: a * x ** 2 + b * x + c
+        factors = [a, b, c]
     elif datatype == 'custom':
         if not f_data_input == '':
             function = lambda x: eval(f_data_input)
@@ -207,91 +208,102 @@ def create_new_factors(datatype,f_data_input):
         factors = ''
     return function, factors
 
+
 # can only cache one function output, otherwise things get stuck
-#@st.experimental_singleton
+#@st.cache_resource
 def create_randomization(dist_type):
     n = st.session_state.n
     length = st.session_state.length
-    xs = np.random.rand(n)*length
+    xs = np.random.rand(n) * length
     xs.sort()
     if dist_type == 'normal':
-        dev = np.random.normal(0,st.session_state.sigma,n)
+        dev = np.random.normal(0, st.session_state.sigma, n)
     elif dist_type == 'equal':
-        dev = (np.random.rand(n)-0.5)*st.session_state.sigma
-    return dev,xs
-    
+        dev = (np.random.rand(n) - 0.5) * st.session_state.sigma
+    return dev, xs
+
+
 def create_new_points():
-    dev,xs = create_randomization(st.session_state.dist_type)
+    dev, xs = create_randomization(st.session_state.dist_type)
     st.session_state.xs = xs
     st.session_state.data = np.array([st.session_state.function(x) for x in xs]) + dev
     return
 
+
 def reset_rnd():
-    st.experimental_singleton.clear()
+    st.cache_resource.clear()
     request_new_data()
     return
 
+
 def update_approx():
-    xs,data,approxtype = st.session_state.xs,st.session_state.data,st.session_state.approxtype
+    xs, data, approxtype = st.session_state.xs, st.session_state.data, st.session_state.approxtype
     if approxtype == 'constant':
-        z=np.polyfit(xs,data,0)
+        z = np.polyfit(xs, data, 0)
     elif approxtype == 'linear':
-        z=np.polyfit(xs,data,1)
+        z = np.polyfit(xs, data, 1)
     elif approxtype == 'quadratic':
-        z=np.polyfit(xs,data,2)
+        z = np.polyfit(xs, data, 2)
     elif approxtype == 'cubic':
-        z=np.polyfit(xs,data,3)
-    st.session_state.approx=np.poly1d(z)
+        z = np.polyfit(xs, data, 3)
+    st.session_state.approx = np.poly1d(z)
     return
+
 
 def request_new_data():
     st.session_state.create_new_data = 1
     return
+
+
 def request_new_points():
     st.session_state.create_new_points = 1
     return
+
 
 def clear_figure():
     del st.session_state['mpl_fig']
     del st.session_state['handles']
 
+
 def write_solution_description():
     solution_description = r'''polyfit guesses: $f(x)\approx '''
-    factors=np.round(st.session_state.approx,2)
-    deg = len(factors)-1
-    for i in range(0,deg+1):
+    factors = np.round(st.session_state.approx, 2)
+    deg = len(factors) - 1
+    for i in range(0, deg + 1):
         if (factors[i] > 0) & (i > 0):
-            solution_description+='+'
-        if deg-i > 1:
-            solution_description+=str(factors[i]) + 'x^' + str(deg-i)
-        elif deg-i == 1:
-            solution_description+=str(factors[i]) + 'x'
-        elif deg-i == 0:
-            solution_description+=str(factors[i])
-    solution_description+='''$'''
-    st.session_state.solution_description=solution_description
+            solution_description += '+'
+        if deg - i > 1:
+            solution_description += str(factors[i]) + 'x^' + str(deg - i)
+        elif deg - i == 1:
+            solution_description += str(factors[i]) + 'x'
+        elif deg - i == 0:
+            solution_description += str(factors[i])
+    solution_description += '''$'''
+    st.session_state.solution_description = solution_description
     return
+
 
 def write_actual_function():
     actual_function = r'''actual function is $f(x) = '''
     if st.session_state.factors == '':
-        actual_function+=st.session_state.f_data_input
-        actual_function+='''$'''
+        actual_function += st.session_state.f_data_input
+        actual_function += '''$'''
     else:
         actual_factors = st.session_state.factors
-        deg = len(actual_factors)-1
-        for i in range(0,deg+1):
+        deg = len(actual_factors) - 1
+        for i in range(0, deg + 1):
             if (actual_factors[i] > 0) & (i > 0):
-                actual_function+='+'
-            if deg-i > 1:
-                actual_function+=str(actual_factors[i]) + 'x^' + str(deg-i)
-            elif deg-i == 1:
-                actual_function+=str(actual_factors[i]) + 'x'
-            elif deg-i == 0:
-                actual_function+=str(actual_factors[i])
-        actual_function+='''$'''
-    st.session_state.actual_function=actual_function
+                actual_function += '+'
+            if deg - i > 1:
+                actual_function += str(actual_factors[i]) + 'x^' + str(deg - i)
+            elif deg - i == 1:
+                actual_function += str(actual_factors[i]) + 'x'
+            elif deg - i == 0:
+                actual_function += str(actual_factors[i])
+        actual_function += '''$'''
+    st.session_state.actual_function = actual_function
     return
+
 
 ###############################################################################
 # setup session_state variables
@@ -314,49 +326,49 @@ st.sidebar.title("Advanced settings")
 # Data options
 
 st.session_state.datatype = st.sidebar.selectbox(label="data type",
-                            options=('constant','linear','quadratic','custom'),
-                            index=2,
-                            on_change=request_new_data())
+                                                 options=('constant', 'linear', 'quadratic', 'custom'),
+                                                 index=2,
+                                                 on_change=request_new_data())
 
 if st.session_state.datatype == 'custom':
     f_data_input = st.sidebar.text_input(label='input the data function',
-                         value='0.5*x**2 + 1*x - 2',
-                         key='f_data_input',
-                         on_change=request_new_data(),
-                         help='''type e.g. 'math.sin(x)' to generate a sine function''')
+                                         value='0.5*x**2 + 1*x - 2',
+                                         key='f_data_input',
+                                         on_change=request_new_data(),
+                                         help='''type e.g. 'math.sin(x)' to generate a sine function''')
 else:
     st.session_state.f_data_input = ''
-    
+
 st.session_state.dist_type = st.sidebar.select_slider('select distribution type',
-                                         ['normal','equal'],
-                                         on_change=request_new_points())
+                                                      ['normal', 'equal'],
+                                                      on_change=request_new_points())
 
 # deviation could be dependent on the total height of the function - but this would need to be re-looped. can't be bothered...
 # if 'data' in st.session_state:
 #     height = max(st.session_state.data)
 # else:
 #     height = 100
-st.session_state.sigma = st.sidebar.number_input('deviation (standard deviation sigma for normal distribution, range for equal distribution)',
-                            min_value=float(0),
-                            max_value=float(100),
-                            # value=0.1*height,
-                            value=float(10),
-                            step=0.01,
-                            on_change=request_new_points())
+st.session_state.sigma = st.sidebar.number_input(
+    'deviation (standard deviation sigma for normal distribution, range for equal distribution)',
+    min_value=float(0),
+    max_value=float(100),
+    # value=0.1*height,
+    value=float(10),
+    step=0.01,
+    on_change=request_new_points())
 
 st.session_state.n = st.sidebar.slider(
-            'number of data points',
-            min_value=0,
-            max_value=1000,
-            value=100,
-            on_change=request_new_points())
-    
+    'number of data points',
+    min_value=0,
+    max_value=1000,
+    value=100,
+    on_change=request_new_points())
 
 st.session_state.length = st.sidebar.slider('length of interval',
-                       min_value = float(1),
-                       max_value = float(50),
-                       value = float(10),
-                       on_change=request_new_points())
+                                            min_value=float(1),
+                                            max_value=float(50),
+                                            value=float(10),
+                                            on_change=request_new_points())
 
 # Visualization Options
 st.sidebar.markdown("Visualization Options")
@@ -374,7 +386,7 @@ ticks_on = st.sidebar.checkbox("show xticks and yticks",
                                key='ticks_on')
 
 # for now, I will assume matplotlib always works and we dont need the Altair backend
-#backend = 'Matplotlib' #st.sidebar.selectbox(label="Backend", options=('Matplotlib', 'Altair'), index=0)
+# backend = 'Matplotlib' #st.sidebar.selectbox(label="Backend", options=('Matplotlib', 'Altair'), index=0)
 
 ###############################################################################
 # Create main page widgets
@@ -389,47 +401,50 @@ if qr:
                     unsafe_allow_html=True)
 else:
     st.title('Approximated Data Points')
-        
-st.markdown('''If you want to create a new function or input your own function, change the advanced settings (top-left).''')
-st.markdown('''The data points will change at random when you guess a new function, but the function you should guess remains the same!''')
+
+st.markdown(
+    '''If you want to create a new function or input your own function, change the advanced settings (top-left).''')
+st.markdown(
+    '''The data points will change at random when you guess a new function, but the function you should guess remains the same!''')
 
 st.session_state.f_input = st.text_input(label='input your guessed function',
-                         value='0.2*x**2 + 1*x - 2',
-                         help='''type e.g. 'math.sin(x)' to generate a sine function''')
+                                         value='0.2*x**2 + 1*x - 2',
+                                         help='''type e.g. 'math.sin(x)' to generate a sine function''')
 
-col1,col2 = st.columns(2)
+col1, col2 = st.columns(2)
 with col1:
     st.session_state.show_solution = st.checkbox("show the actual function",
-                                value=False,
-                                on_change=clear_figure)
+                                                 value=False,
+                                                 on_change=clear_figure)
     st.session_state.show_polyfit_solution = st.checkbox("show the polyfit solution",
-                                value=False,
-                                on_change=clear_figure)
+                                                         value=False,
+                                                         on_change=clear_figure)
 if st.session_state.show_polyfit_solution:
     with col2:
         st.session_state.approxtype = st.selectbox(label='approximation type',
-                                      options=('constant','linear','quadratic','cubic'),
-                                      index=2)
-else: st.session_state.approxtype = 'constant'
+                                                   options=('constant', 'linear', 'quadratic', 'cubic'),
+                                                   index=2)
+else:
+    st.session_state.approxtype = 'constant'
 
 ###
 # for some reason, reset still doesn't work...
 # with col4:
 #     st.button(label='create new randomization',on_click=reset_rnd())
-    
-if (st.session_state.create_new_data==1):
-    st.session_state.function, st.session_state.factors = create_new_factors(st.session_state.datatype,st.session_state.f_data_input)
+
+if (st.session_state.create_new_data == 1):
+    st.session_state.function, st.session_state.factors = create_new_factors(st.session_state.datatype,
+                                                                             st.session_state.f_data_input)
     create_new_points()
     update_approx()
     st.session_state.create_new_data = 0
     st.session_state.create_new_points = 0
-elif (st.session_state.create_new_points==1):
+elif (st.session_state.create_new_points == 1):
     create_new_points()
     update_approx()
     st.session_state.create_new_points = 0
 
-
-col1,col2=st.columns(2)
+col1, col2 = st.columns(2)
 if st.session_state.show_solution:
     write_actual_function()
     with col1:
